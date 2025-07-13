@@ -1,0 +1,14 @@
+{
+    "rust-analyzer.cargo.runBuildScripts": true,
+    "rust-analyzer.checkOnSave.command": "clippy",
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "files.exclude": {
+        "target": true
+    },
+    "terminal.integrated.env.osx": {
+        "RUST_BACKTRACE": "1"
+    },
+    "lldb.adapterType": "native",
+    "lldb.displayFormat": "auto"
+} 

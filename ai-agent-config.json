@@ -1,0 +1,130 @@
+{
+  "mcp_server_config": {
+    "name": "Linux System Monitor",
+    "version": "1.0.0",
+    "description": "MCP server for monitoring Linux system resources",
+    "endpoints": {
+      "base_url": "http://your-linux-server:8080",
+      "health_check": "/health",
+      "api_prefix": "/api"
+    },
+    "capabilities": {
+      "system_monitoring": {
+        "description": "Monitor system resources and processes",
+        "methods": [
+          "getSystemInfo",
+          "getCPUInfo", 
+          "getMemoryInfo",
+          "getDiskInfo",
+          "getNetworkInfo",
+          "getProcesses",
+          "getProcessByPID",
+          "getSystemMetrics"
+        ]
+      },
+      "monitoring_control": {
+        "description": "Control monitoring sessions",
+        "methods": [
+          "startMonitoring",
+          "stopMonitoring"
+        ]
+      }
+    },
+    "data_sources": {
+      "system_info": {
+        "source": "Linux system commands",
+        "commands": ["hostname", "cat /etc/os-release", "uname -r", "cat /proc/uptime"]
+      },
+      "cpu_info": {
+        "source": "/proc/cpuinfo and /proc/stat",
+        "commands": ["cat /proc/cpuinfo", "cat /proc/stat"]
+      },
+      "memory_info": {
+        "source": "/proc/meminfo",
+        "commands": ["cat /proc/meminfo"]
+      },
+      "disk_info": {
+        "source": "df command",
+        "commands": ["df -h --output=source,target,fstype,size,used,avail"]
+      },
+      "network_info": {
+        "source": "/proc/net/dev and ip command",
+        "commands": ["cat /proc/net/dev", "ip addr show"]
+      },
+      "process_info": {
+        "source": "ps command",
+        "commands": ["ps -eo pid,ppid,user,pcpu,pmem,comm,args,stat,etime"]
+      }
+    },
+    "supported_distributions": [
+      "Ubuntu 18.04+",
+      "CentOS 7+",
+      "RedHat 7+",
+      "Debian 10+",
+      "Amazon Linux 2"
+    ],
+    "security": {
+      "authentication": "None (configure as needed)",
+      "rate_limiting": "None (configure as needed)",
+      "network_access": "HTTP on port 8080",
+      "privileged_access": "Required for system monitoring"
+    },
+    "monitoring_frequency": {
+      "recommended": "30 seconds",
+      "minimum": "5 seconds",
+      "maximum": "300 seconds"
+    },
+    "alert_thresholds": {
+      "cpu_usage": {
+        "warning": 80.0,
+        "critical": 95.0
+      },
+      "memory_usage": {
+        "warning": 85.0,
+        "critical": 95.0
+      },
+      "disk_usage": {
+        "warning": 85.0,
+        "critical": 95.0
+      }
+    }
+  },
+  "ai_agent_integration": {
+    "protocol": "HTTP REST API + MCP",
+    "authentication": "None (add as needed)",
+    "rate_limiting": "None (add as needed)",
+    "data_format": "JSON",
+    "compression": "None (add as needed)",
+    "timeout": "30 seconds",
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff_delay": "exponential",
+      "max_delay": "60 seconds"
+    }
+  },
+  "example_usage": {
+    "health_check": "curl http://your-linux-server:8080/health",
+    "system_info": "curl http://your-linux-server:8080/api/system/info",
+    "cpu_info": "curl http://your-linux-server:8080/api/system/cpu",
+    "memory_info": "curl http://your-linux-server:8080/api/system/memory",
+    "processes": "curl http://your-linux-server:8080/api/system/processes",
+    "start_monitoring": "curl -X POST http://your-linux-server:8080/api/monitoring/start"
+  },
+  "deployment": {
+    "docker": {
+      "image": "mcp-system-monitor:latest",
+      "ports": ["8080:8080"],
+      "privileged": true,
+      "volumes": [
+        "/proc:/host/proc:ro",
+        "/sys:/host/sys:ro",
+        "/etc:/host/etc:ro"
+      ]
+    },
+    "systemd": {
+      "service_name": "mcp-system-monitor",
+      "auto_start": true,
+      "restart_policy": "unless-stopped"
+    }
+  }
+} 

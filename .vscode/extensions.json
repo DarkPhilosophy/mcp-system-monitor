@@ -1,0 +1,10 @@
+{
+    "recommendations": [
+        "rust-lang.rust-analyzer",
+        "vadimcn.vscode-lldb",
+        "ms-azuretools.vscode-docker",
+        "serayuzgur.crates",
+        "tamasfe.even-better-toml",
+        "editorconfig.editorconfig"
+    ]
+} 

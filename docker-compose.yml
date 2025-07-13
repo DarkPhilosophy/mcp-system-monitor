@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  mcp-system-monitor:
+    build: .
+    container_name: mcp-system-monitor
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      - RUST_LOG=info
+    volumes:
+      # Mount proc filesystem for system monitoring
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc:/host/etc:ro
+    # Run with host network for better system access
+    network_mode: host
+    # Run as privileged to access system information
+    privileged: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s 

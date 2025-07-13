@@ -1,0 +1,83 @@
+# Rust build
+/target/
+**/*.rs.bk
+
+# Cargo
+Cargo.lock
+.cargo/
+.cargo-vcs/
+
+# IDEs & Editors
+.idea/
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+*.temp
+*.orig
+*.rej
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+log/
+logs/
+
+# Environment variables
+.env
+.env.*
+
+# Build artifacts
+/dist/
+/build/
+
+# Test output
+/coverage/
+*.profraw
+*.profdata
+
+# Misc
+*.lock
+*.pid
+*.seed
+*.old
+*.out
+*.exe
+*.dll
+*.dylib
+*.so
+*.a
+*.lib
+*.obj
+*.bin
+*.class
+*.pyc
+*.pyo
+*.pyd
+
+# Node/npm (if any frontend)
+node_modules/
+
+# Ignore backup and patch files
+*.patch
+*.diff
+
+# Ignore by convention
+*.secret
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+*.db
+*.sqlite
+*.sqlite3

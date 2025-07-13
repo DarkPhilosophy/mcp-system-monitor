@@ -1,0 +1,25 @@
+=== MCP System Monitor Demo Report ===
+
+Generated: 2025-07-13 13:06:03.253953 UTC
+Data points collected: 10
+Collection interval: 2 seconds
+
+=== System Metrics Summary ===
+Average CPU Usage: 30.9%
+Average Memory Usage: 64.7%
+Average Disk Usage: 47.9%
+Average Process Count: 176
+
+=== Peak Values ===
+Peak CPU Usage: 59.9%
+Peak Memory Usage: 80.8%
+
+=== Network Summary ===
+Total Received: 37278844 bytes (35.55 MB)
+Total Transmitted: 15926036 bytes (15.19 MB)
+
+=== Generated Files ===
+- cpu_usage.png: CPU usage over time
+- memory_usage.png: Memory usage over time
+- network_traffic.png: Network traffic analysis
+- system_dashboard.png: System overview dashboard
