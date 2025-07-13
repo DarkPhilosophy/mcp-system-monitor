@@ -1228,7 +1228,3 @@ class SystemMonitorAgent {
 **Note:** The project roadmap is not public at this time. Please contact the author for more information if needed.
 
 ---
-
-**For more information, visit:** https://github.com/hungtrungthinh/mcp-system-monitor
-
-**Contact:** hello@boringlab.info 
