@@ -2,6 +2,10 @@
 
 A Model Context Protocol (MCP) server implementation designed for AI agents to monitor and interact with Linux servers (Ubuntu, CentOS, RedHat, etc.). This server provides comprehensive system information including CPU, memory, disk, network, and process data through both MCP protocol and HTTP REST API, enabling AI agents to perform remote system monitoring and management tasks.
 
+## Development Platform
+
+This project was developed and integrated using **Claude Code Max**, an advanced AI-powered development platform. The entire codebase, architecture design, testing, and documentation were created with Claude Code Max's assistance, making it a comprehensive AI-assisted development project.
+
 ## Author
 
 **Name:** Thinh Nguyen  
@@ -28,6 +32,7 @@ A Model Context Protocol (MCP) server implementation designed for AI agents to m
 
 ## Features
 
+- **AI-Assisted Development**: Built entirely with Claude Code Max, demonstrating advanced AI-powered software development capabilities
 - **Linux Server Support**: Optimized for Ubuntu, CentOS, RedHat, and other Linux distributions
 - **AI Agent Integration**: Designed for AI agents to perform remote system monitoring and management
 - **Real System Data**: Collects actual system information from Linux procfs and system commands
@@ -593,6 +598,19 @@ The server implements the Model Context Protocol for system monitoring using JSO
 ```
 
 ## Development
+
+### AI-Assisted Development with Claude Code Max
+
+This project was entirely developed using **Claude Code Max**, an advanced AI-powered development platform. The development process included:
+
+- **Architecture Design**: Complete system architecture and component design
+- **Code Generation**: Full codebase implementation with Rust best practices
+- **Testing Strategy**: Comprehensive test suite and integration testing
+- **Documentation**: Complete API documentation and user guides
+- **Deployment**: Docker containerization and deployment scripts
+- **Quality Assurance**: Code review, linting, and security auditing
+
+The integration with Claude Code Max demonstrates the capabilities of AI-assisted development in creating production-ready, enterprise-grade software solutions.
 
 ### Project Structure
 
