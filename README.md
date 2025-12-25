@@ -142,11 +142,32 @@ The server will start on port 8080 by default.
 
 ## Quick Start
 
-### 1. Start the Server
+### Automated Installation (Recommended)
+
+```bash
+# Clone repository and run install script
+git clone https://github.com/DarkPhilosophy/mcp-system-monitor.git
+cd mcp-system-monitor
+chmod +x install.sh
+sudo ./install.sh    # Linux
+# or
+./install.sh         # macOS
+```
+
+The script will:
+- Install Rust (if needed) via homebrew or rustup
+- Build the project
+- Set up systemd (Linux) or launchd (macOS) service
+- Start the service automatically
+- Test the API health
+
+### Manual Installation
+
+#### 1. Start the Server
 
 ```bash
 # Clone and build
-git clone https://github.com/hungtrungthinh/mcp-system-monitor.git
+git clone https://github.com/DarkPhilosophy/mcp-system-monitor.git
 cd mcp-system-monitor
 cargo build --release
 
@@ -154,24 +175,141 @@ cargo build --release
 cargo run --release
 ```
 
-### 2. Test the API
+#### 2. Test the API
 
 ```bash
 # Health check
-curl http://localhost:8080/health
+curl http://localhost:57996/health
 
 # Get system information
-curl http://localhost:8080/api/system/info
+curl http://localhost:57996/api/system/info
 
 # Get CPU information
-curl http://localhost:8080/api/system/cpu
+curl http://localhost:57996/api/system/cpu
 ```
 
-### 3. Run the Example Client
+#### 3. Run the Example Client
 
 ```bash
 # In another terminal
 cargo run --example client
+```
+
+## OpenCode Integration
+
+### Installation for OpenCode
+
+1. **Install MCP System Monitor** (if not already installed):
+```bash
+sudo ./install.sh    # Automated installation
+```
+
+2. **Edit OpenCode Configuration**:
+
+Create or edit `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "mcpServers": {
+    "mcp-system-monitor": {
+      "command": "curl",
+      "args": [
+        "-s",
+        "-X",
+        "POST",
+        "http://localhost:57996",
+        "-H",
+        "Content-Type: application/json",
+        "-d",
+        "@-"
+      ],
+      "disabled": false,
+      "description": "System monitoring and information tool"
+    }
+  }
+}
+```
+
+### Alternative: Using stdio Transport (Recommended for local integration)
+
+If you want to use stdio transport instead of HTTP:
+
+```json
+{
+  "mcpServers": {
+    "mcp-system-monitor": {
+      "command": "/opt/mcp-system-monitor/target/release/mcp-system-monitor",
+      "args": ["--stdio"],
+      "disabled": false,
+      "description": "System monitoring and information tool"
+    }
+  }
+}
+```
+
+### Using OpenCode with MCP System Monitor
+
+Once configured, you can query system information directly from OpenCode:
+
+```
+User: What's my current CPU usage?
+OpenCode will call: tools/call with method "get_cpu_info"
+Response: CPU usage percentage and details
+```
+
+### Available Tools in OpenCode
+
+All MCP methods are available as tools:
+
+- `initialize` - Initialize MCP session
+- `tools/list` - List available monitoring tools
+- `tools/call` - Call specific monitoring tool with parameters:
+  - `get_system_info` - Get system information
+  - `get_cpu_info` - Get CPU information
+  - `get_memory_info` - Get memory information
+  - `get_disk_info` - Get disk information
+  - `get_network_info` - Get network information
+  - `get_processes` - Get all processes
+  - `get_process_by_pid` - Get specific process
+  - `get_system_metrics` - Get complete system metrics
+
+### Example OpenCode Query
+
+```
+OpenCode: "Show me the top CPU consuming processes"
+→ Calls: tools/call with "get_processes"
+→ Returns: Process list sorted by CPU usage
+→ OpenCode analyzes and presents results
+```
+
+### Troubleshooting OpenCode Integration
+
+**Connection refused error:**
+```bash
+# Ensure service is running
+sudo systemctl status mcp-system-monitor  # Linux
+# or
+launchctl list | grep mcp-system-monitor  # macOS
+
+# Check if service is listening on port 57996
+curl http://localhost:57996/health
+```
+
+**Permission denied for --stdio mode:**
+```bash
+# Ensure binary has correct permissions
+chmod +x /opt/mcp-system-monitor/target/release/mcp-system-monitor
+```
+
+**OpenCode can't find the MCP server:**
+```bash
+# Verify opencode.json syntax
+cat ~/.config/opencode/opencode.json | python3 -m json.tool
+
+# Test MCP connection manually
+curl -X POST http://localhost:57996 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":"1","method":"tools/list","params":{}}'
 ```
 
 ## API Documentation
