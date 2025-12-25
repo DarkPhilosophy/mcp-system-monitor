@@ -206,42 +206,50 @@ sudo ./install.sh    # Automated installation
 
 2. **Edit OpenCode Configuration**:
 
-Create or edit `~/.config/opencode/opencode.json`:
+Edit `~/.config/opencode/opencode.json` and add to the `mcp` section:
 
 ```json
 {
-  "mcpServers": {
+  "mcp": {
     "mcp-system-monitor": {
-      "command": "curl",
-      "args": [
-        "-s",
-        "-X",
-        "POST",
-        "http://localhost:57996",
-        "-H",
-        "Content-Type: application/json",
-        "-d",
-        "@-"
-      ],
-      "disabled": false,
-      "description": "System monitoring and information tool"
+      "type": "remote",
+      "url": "http://localhost:57996/",
+      "enabled": true
     }
   }
 }
 ```
 
-### Alternative: Using stdio Transport (Recommended for local integration)
-
-If you want to use stdio transport instead of HTTP:
+**Full example** `~/.config/opencode/opencode.json`:
 
 ```json
 {
-  "mcpServers": {
+  "$schema": "https://opencode.ai/config.json",
+  "model": "mistral/devstral-medium-latest",
+  "mcp": {
     "mcp-system-monitor": {
-      "command": "/opt/mcp-system-monitor/target/release/mcp-system-monitor",
-      "args": ["--stdio"],
-      "disabled": false,
-      "description": "System monitoring and information tool"
+      "type": "remote",
+      "url": "http://localhost:57996/",
+      "enabled": true
+    }
+  }
+}
+```
+
+### Alternative: Using stdio Transport
+
+If you prefer stdio transport instead of HTTP:
+
+```json
+{
+  "mcp": {
+    "mcp-system-monitor": {
+      "type": "local",
+      "command": [
+        "/opt/mcp-system-monitor/target/release/mcp-system-monitor",
+        "--stdio"
+      ],
+      "enabled": true
     }
   }
 }
