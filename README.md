@@ -6,15 +6,13 @@ A Model Context Protocol (MCP) server implementation designed for AI agents to m
 
 This project was developed and integrated using **Claude Code Max**, an advanced AI-powered development platform. The entire codebase, architecture design, testing, and documentation were created with Claude Code Max's assistance, making it a comprehensive AI-assisted development project.
 
-## Author
+## Author & Repository
 
-**Name:** Thinh Nguyen  
-**Role:** Enterprise IT  
-**Email:** hello@boringlab.info
+**Maintainer:** DarkPhilosophy [@DarkPhilosophy](https://github.com/DarkPhilosophy)  
+**Repository:** [https://github.com/DarkPhilosophy/mcp-system-monitor](https://github.com/DarkPhilosophy/mcp-system-monitor)
 
-## Repository
-
-**Official GitHub:** [https://github.com/hungtrungthinh/mcp-system-monitor](https://github.com/hungtrungthinh/mcp-system-monitor)
+**Original Project by:** Thinh Nguyen  
+**Original Repository:** [https://github.com/hungtrungthinh/mcp-system-monitor](https://github.com/hungtrungthinh/mcp-system-monitor)
 
 ## Table of Contents
 
@@ -46,6 +44,23 @@ This project was developed and integrated using **Claude Code Max**, an advanced
 - **HTTP REST API**: Easy integration for AI agents and web applications
 - **MCP Protocol**: Standard Model Context Protocol support for AI agent communication
 
+## Recent Updates (2025)
+
+### MCP Protocol Fixes
+- **Streamable HTTP Transport Compliance**: Fixed POST requests to return JSON responses instead of SSE
+- **Notification Support**: Implemented proper handling of MCP notifications (requests without `id` field)
+- **Optional ID Handling**: Made request/response IDs optional to comply with JSON-RPC 2.0 spec
+- **Tool Response Wrapping**: Fixed `tools/call` responses to wrap results in proper MCP content format `{ content: [{ type: "text", text: "..." }] }`
+
+### Data Parsing Enhancements
+- **Locale-Aware Size Parsing**: Fixed parsing of disk sizes with locale-specific formatting (e.g., "4,6G" with comma separators)
+- **Flexible Time Parsing**: Enhanced elapsed time parsing to handle both "MM:SS" and "HH:MM:SS" or "D-HH:MM:SS" formats
+- **Robust Error Handling**: Improved error messages and parsing validation
+
+### Integration Testing
+- **OpenCode Compatibility**: Successfully tested with OpenCode MCP client
+- **Protocol Verification**: Validated compliance with Streamable HTTP MCP specification
+
 ## Architecture
 
 ```
@@ -57,7 +72,7 @@ This project was developed and integrated using **Claude Code Max**, an advanced
                                  │
                     ┌─────────────▼─────────────┐
                     │     HTTP Server           │
-                    │   (Port 8080)             │
+                    │   (Port 57996)            │
                     │   (Axum Framework)        │
                     └─────────────┬─────────────┘
                                   │
@@ -453,47 +468,112 @@ const processes = await axios.get(`${baseUrl}/api/system/processes`);
 
 ## MCP Protocol
 
-The server implements the Model Context Protocol for system monitoring using JSON-RPC 2.0.
+The server implements the Model Context Protocol for system monitoring using JSON-RPC 2.0 with Streamable HTTP transport.
 
-### Available Methods
+### MCP Methods
 
-- `getSystemInfo` - Get system information
-- `getCPUInfo` - Get CPU information
-- `getMemoryInfo` - Get memory information
-- `getDiskInfo` - Get disk information
-- `getNetworkInfo` - Get network information
-- `getProcesses` - Get all processes
-- `getProcessByPID` - Get specific process by PID
-- `getSystemMetrics` - Get complete system metrics
-- `startMonitoring` - Start monitoring
-- `stopMonitoring` - Stop monitoring
+#### Request Methods (require response)
+- `initialize` - Initialize MCP session with protocol version negotiation
+- `tools/list` - List all available monitoring tools
+- `tools/call` - Call a specific monitoring tool
 
-### Example MCP Request
+#### Notification Methods (no response expected)
+- `initialized` - Signal initialization complete
 
+### Available Tools
+
+When calling `tools/call`, use these tool names:
+
+- `get_system_info` - Get system information
+- `get_cpu_info` - Get CPU information
+- `get_memory_info` - Get memory information
+- `get_disk_info` - Get disk information
+- `get_network_info` - Get network information
+- `get_processes` - Get all processes
+- `get_system_metrics` - Get complete system metrics
+
+### Example MCP Requests
+
+#### Initialize Request (POST /)
 ```json
 {
   "jsonrpc": "2.0",
-  "id": "123",
-  "method": "getSystemInfo",
-  "params": {}
+  "id": 0,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-06-18",
+    "clientInfo": {
+      "name": "opencode",
+      "version": "1.0"
+    },
+    "capabilities": {}
+  }
 }
 ```
 
-### Example MCP Response
-
+#### Initialize Response
 ```json
 {
   "jsonrpc": "2.0",
-  "id": "123",
+  "id": 0,
   "result": {
-    "hostname": "server.example.com",
-    "os_name": "Ubuntu",
-    "os_version": "20.04.3 LTS",
-    "kernel_version": "5.4.0-74-generic",
-    "uptime": 86400,
-    "boot_time": "2024-01-01T00:00:00Z"
-  },
-  "error": null
+    "protocolVersion": "2025-06-18",
+    "capabilities": {
+      "tools": {}
+    },
+    "serverInfo": {
+      "name": "mcp-system-monitor",
+      "version": "0.1.0"
+    }
+  }
+}
+```
+
+#### Tools List Request (POST /)
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list",
+  "params": null
+}
+```
+
+#### Tool Call Request (POST /)
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "get_system_info",
+    "arguments": {}
+  }
+}
+```
+
+#### Tool Call Response
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"hostname\": \"hp\",\n  \"os_name\": \"Bazzite\",\n  \"os_version\": \"43.20251222.0 (Silverblue)\",\n  \"kernel_version\": \"6.17.7-ba22.fc43.x86_64\",\n  \"uptime\": 172051,\n  \"boot_time\": \"2025-12-23T11:29:47Z\"\n}"
+      }
+    ]
+  }
+}
+```
+
+#### Initialized Notification (POST /)
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "initialized",
+  "params": {}
 }
 ```
 

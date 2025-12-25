@@ -55,8 +55,6 @@ pub const ERROR_INTERNAL_ERROR: i32 = -32603;
 /// Parse error - Invalid JSON was received by the server
 pub const ERROR_PARSE_ERROR: i32 = -32700;
 
-/// Custom Error Codes (Server Error -32000 to -32099)
-
 /// Process not found - The specified process PID does not exist
 pub const ERROR_PROCESS_NOT_FOUND: i32 = -32001;
 
@@ -71,3 +69,5 @@ pub const ERROR_SYSTEM_COMMAND_FAILED: i32 = -32004;
 
 /// Permission denied - Insufficient permissions to access system information
 pub const ERROR_PERMISSION_DENIED: i32 = -32005;
+
+
