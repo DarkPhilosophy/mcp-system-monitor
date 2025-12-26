@@ -26,12 +26,19 @@ pub fn parse_size(size_str: &str) -> Result<u64> {
         return Ok(0);
     }
 
+    // Remove commas (locale-specific formatting like "4,6G")
+    let size_str = size_str.replace(",", ".");
+    
     // Try to parse as a number first
     if let Ok(size) = size_str.parse::<u64>() {
         return Ok(size);
     }
 
     // Parse with unit suffix
+    if size_str.len() < 2 {
+        return Err(anyhow!("Invalid number in size string: {}", size_str));
+    }
+    
     let (number_str, unit) = size_str.split_at(size_str.len() - 1);
     let number = number_str
         .parse::<f64>()
@@ -69,47 +76,62 @@ pub fn parse_etime(etime: &str) -> Result<DateTime<Utc>> {
     }
 
     let parts: Vec<&str> = etime.split(':').collect();
-    if parts.len() != 3 {
+    
+    // Handle both "48:38" (2 parts: minutes:seconds) and "1-02:30:45" (3+ parts)
+    if parts.len() < 2 || parts.len() > 3 {
         return Err(anyhow!("Invalid elapsed time format: {}", etime));
     }
 
     let mut total_seconds = 0i64;
 
-    // Parse days if present (format: "1-02:30:45")
-    let time_part = parts[0];
-    if time_part.contains('-') {
-        let day_parts: Vec<&str> = time_part.split('-').collect();
-        if day_parts.len() == 2 {
-            let days: i64 = day_parts[0]
-                .parse()
-                .map_err(|_| anyhow!("Invalid days in elapsed time: {}", etime))?;
-            total_seconds += days * 24 * 3600;
+    if parts.len() == 2 {
+        // Format: "MM:SS" (just minutes and seconds)
+        let minutes: i64 = parts[0]
+            .parse()
+            .map_err(|_| anyhow!("Invalid minutes in elapsed time: {}", etime))?;
+        total_seconds += minutes * 60;
+        
+        let seconds: i64 = parts[1]
+            .parse()
+            .map_err(|_| anyhow!("Invalid seconds in elapsed time: {}", etime))?;
+        total_seconds += seconds;
+    } else {
+        // Format: "HH:MM:SS" or "D-HH:MM:SS"
+        let time_part = parts[0];
+        if time_part.contains('-') {
+            let day_parts: Vec<&str> = time_part.split('-').collect();
+            if day_parts.len() == 2 {
+                let days: i64 = day_parts[0]
+                    .parse()
+                    .map_err(|_| anyhow!("Invalid days in elapsed time: {}", etime))?;
+                total_seconds += days * 24 * 3600;
 
-            let hours: i64 = day_parts[1]
+                let hours: i64 = day_parts[1]
+                    .parse()
+                    .map_err(|_| anyhow!("Invalid hours in elapsed time: {}", etime))?;
+                total_seconds += hours * 3600;
+            } else {
+                return Err(anyhow!("Invalid elapsed time format: {}", etime));
+            }
+        } else {
+            let hours: i64 = time_part
                 .parse()
                 .map_err(|_| anyhow!("Invalid hours in elapsed time: {}", etime))?;
             total_seconds += hours * 3600;
-        } else {
-            return Err(anyhow!("Invalid elapsed time format: {}", etime));
         }
-    } else {
-        let hours: i64 = time_part
+
+        // Parse minutes
+        let minutes: i64 = parts[1]
             .parse()
-            .map_err(|_| anyhow!("Invalid hours in elapsed time: {}", etime))?;
-        total_seconds += hours * 3600;
+            .map_err(|_| anyhow!("Invalid minutes in elapsed time: {}", etime))?;
+        total_seconds += minutes * 60;
+
+        // Parse seconds
+        let seconds: i64 = parts[2]
+            .parse()
+            .map_err(|_| anyhow!("Invalid seconds in elapsed time: {}", etime))?;
+        total_seconds += seconds;
     }
-
-    // Parse minutes
-    let minutes: i64 = parts[1]
-        .parse()
-        .map_err(|_| anyhow!("Invalid minutes in elapsed time: {}", etime))?;
-    total_seconds += minutes * 60;
-
-    // Parse seconds
-    let seconds: i64 = parts[2]
-        .parse()
-        .map_err(|_| anyhow!("Invalid seconds in elapsed time: {}", etime))?;
-    total_seconds += seconds;
 
     Ok(now - chrono::Duration::seconds(total_seconds))
 }
@@ -175,56 +197,7 @@ pub fn safe_parse_i32(s: &str) -> i32 {
 ///
 /// # Returns
 ///
-/// Returns the value as a string if found, None otherwise
-pub fn extract_value(line: &str, key: &str) -> Option<String> {
-    if line.starts_with(key) {
-        line.split(':').nth(1).map(|s| s.trim().to_string())
-    } else {
-        None
-    }
-}
 
-/// Extracts a numeric value from a key-value line and converts it to u64
-///
-/// # Arguments
-///
-/// * `line` - The line to parse
-/// * `key` - The key to look for
-///
-/// # Returns
-///
-/// Returns the value as u64 if found and valid, None otherwise
-pub fn extract_numeric_value(line: &str, key: &str) -> Option<u64> {
-    extract_value(line, key)
-        .and_then(|v| v.split_whitespace().next().map(|s| s.to_string()))
-        .and_then(|v| v.parse::<u64>().ok())
-}
-
-/// Formats bytes into a human-readable string
-///
-/// # Arguments
-///
-/// * `bytes` - The number of bytes
-///
-/// # Returns
-///
-/// Returns a formatted string (e.g., "1.5 GB")
-pub fn format_bytes(bytes: u64) -> String {
-    const UNITS: [&str; 4] = ["B", "KB", "MB", "GB"];
-    let mut size = bytes as f64;
-    let mut unit_index = 0;
-
-    while size >= 1024.0 && unit_index < UNITS.len() - 1 {
-        size /= 1024.0;
-        unit_index += 1;
-    }
-
-    if unit_index == 0 {
-        format!("{} {}", bytes, UNITS[unit_index])
-    } else {
-        format!("{:.1} {}", size, UNITS[unit_index])
-    }
-}
 
 /// Calculates percentage with safe division
 ///

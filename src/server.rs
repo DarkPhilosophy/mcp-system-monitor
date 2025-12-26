@@ -29,8 +29,19 @@ impl MCPServer {
     /// Handles MCP request and returns response
     pub async fn handle_request(&self, request: MCPRequest) -> MCPResponse {
         let id = request.id.clone();
+        
+        use tracing::info;
+        info!("🔍 MCP Handler - Method: {}, ID: {:?}", request.method, id);
 
         match request.method.as_str() {
+            "initialize" => self.handle_initialize(id, request.params).await,
+            "initialized" => {
+                info!("✅ Received initialized notification");
+                // Notifications don't have responses, but return a dummy for consistency
+                self.create_success_response(id, serde_json::json!({}))
+            },
+            "tools/list" => self.handle_tools_list(id).await,
+            "tools/call" => self.handle_tools_call(id, request.params).await,
             METHOD_GET_SYSTEM_INFO => self.handle_get_system_info(id).await,
             METHOD_GET_CPU_INFO => self.handle_get_cpu_info(id).await,
             METHOD_GET_MEMORY_INFO => self.handle_get_memory_info(id).await,
@@ -45,8 +56,127 @@ impl MCPServer {
         }
     }
 
+    /// Handles initialize method (MCP spec requirement)
+    async fn handle_initialize(&self, id: Option<String>, params: Value) -> MCPResponse {
+        // Extract requested protocol version from params
+        let requested_version = params
+            .get("protocolVersion")
+            .and_then(|v| v.as_str())
+            .unwrap_or("2025-11-25");
+        
+        let result = serde_json::json!({
+            "protocolVersion": requested_version,
+            "capabilities": {
+                "tools": {}
+            },
+            "serverInfo": {
+                "name": "mcp-system-monitor",
+                "version": "0.1.0"
+            }
+        });
+        self.create_success_response(id, result)
+    }
+
+    /// Handles tools/list method (MCP spec requirement)
+    async fn handle_tools_list(&self, id: Option<String>) -> MCPResponse {
+        let result = serde_json::json!({
+            "tools": [
+                {
+                    "name": "get_system_info",
+                    "description": "Get system information (hostname, OS, kernel version, uptime)",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                },
+                {
+                    "name": "get_cpu_info",
+                    "description": "Get CPU information and usage statistics",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                },
+                {
+                    "name": "get_memory_info",
+                    "description": "Get memory and swap usage information",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                },
+                {
+                    "name": "get_disk_info",
+                    "description": "Get disk usage information for all mounted filesystems",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                },
+                {
+                    "name": "get_network_info",
+                    "description": "Get network interface information and statistics",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                },
+                {
+                    "name": "get_processes",
+                    "description": "Get list of all running processes",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                },
+                {
+                    "name": "get_system_metrics",
+                    "description": "Get comprehensive system metrics",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            ]
+        });
+        self.create_success_response(id, result)
+    }
+
+    /// Handles tools/call method (MCP spec requirement)
+    async fn handle_tools_call(&self, id: Option<String>, params: Value) -> MCPResponse {
+        let tool_name = params.get("name").and_then(|v| v.as_str());
+        
+        use tracing::info;
+        if let Some(name) = tool_name {
+            info!("🔧 Calling tool: {}", name);
+        }
+        
+        let tool_response = match tool_name {
+            Some("get_system_info") => self.handle_get_system_info(id.clone()).await,
+            Some("get_cpu_info") => self.handle_get_cpu_info(id.clone()).await,
+            Some("get_memory_info") => self.handle_get_memory_info(id.clone()).await,
+            Some("get_disk_info") => self.handle_get_disk_info(id.clone()).await,
+            Some("get_network_info") => self.handle_get_network_info(id.clone()).await,
+            Some("get_processes") => self.handle_get_processes(id.clone()).await,
+            Some("get_system_metrics") => self.handle_get_system_metrics(id.clone()).await,
+            _ => return self.create_error_response(id, ERROR_METHOD_NOT_FOUND, "Tool not found"),
+        };
+        
+        // Wrap result in MCP content format for tools/call responses
+        match tool_response.result {
+            Some(result) => {
+                let content = vec![serde_json::json!({
+                    "type": "text",
+                    "text": serde_json::to_string_pretty(&result).unwrap_or_else(|_| "{}".to_string())
+                })];
+                self.create_success_response(id, serde_json::json!({ "content": content }))
+            }
+            None => tool_response
+        }
+    }
+
     /// Handles getSystemInfo method
-    async fn handle_get_system_info(&self, id: String) -> MCPResponse {
+    async fn handle_get_system_info(&self, id: Option<String>) -> MCPResponse {
         let mut monitor = self.system_monitor.write().await;
         match monitor.get_system_info() {
             Ok(info) => {
@@ -65,7 +195,7 @@ impl MCPServer {
     }
 
     /// Handles getCPUInfo method
-    async fn handle_get_cpu_info(&self, id: String) -> MCPResponse {
+    async fn handle_get_cpu_info(&self, id: Option<String>) -> MCPResponse {
         let mut monitor = self.system_monitor.write().await;
         match monitor.get_cpu_info() {
             Ok(info) => {
@@ -84,7 +214,7 @@ impl MCPServer {
     }
 
     /// Handles getMemoryInfo method
-    async fn handle_get_memory_info(&self, id: String) -> MCPResponse {
+    async fn handle_get_memory_info(&self, id: Option<String>) -> MCPResponse {
         let mut monitor = self.system_monitor.write().await;
         match monitor.get_memory_info() {
             Ok(info) => {
@@ -103,7 +233,7 @@ impl MCPServer {
     }
 
     /// Handles getDiskInfo method
-    async fn handle_get_disk_info(&self, id: String) -> MCPResponse {
+    async fn handle_get_disk_info(&self, id: Option<String>) -> MCPResponse {
         let mut monitor = self.system_monitor.write().await;
         match monitor.get_disk_info() {
             Ok(disks) => {
@@ -122,7 +252,7 @@ impl MCPServer {
     }
 
     /// Handles getNetworkInfo method
-    async fn handle_get_network_info(&self, id: String) -> MCPResponse {
+    async fn handle_get_network_info(&self, id: Option<String>) -> MCPResponse {
         let mut monitor = self.system_monitor.write().await;
         match monitor.get_network_info() {
             Ok(networks) => {
@@ -141,7 +271,7 @@ impl MCPServer {
     }
 
     /// Handles getProcesses method
-    async fn handle_get_processes(&self, id: String) -> MCPResponse {
+    async fn handle_get_processes(&self, id: Option<String>) -> MCPResponse {
         let mut monitor = self.system_monitor.write().await;
         match monitor.get_processes() {
             Ok(processes) => {
@@ -160,7 +290,7 @@ impl MCPServer {
     }
 
     /// Handles getProcessByPID method
-    async fn handle_get_process_by_pid(&self, id: String, params: Value) -> MCPResponse {
+    async fn handle_get_process_by_pid(&self, id: Option<String>, params: Value) -> MCPResponse {
         let pid = match params.get("pid") {
             Some(pid_value) => match pid_value.as_u64() {
                 Some(pid) => pid as u32,
@@ -204,7 +334,7 @@ impl MCPServer {
     }
 
     /// Handles getSystemMetrics method
-    async fn handle_get_system_metrics(&self, id: String) -> MCPResponse {
+    async fn handle_get_system_metrics(&self, id: Option<String>) -> MCPResponse {
         let mut monitor = self.system_monitor.write().await;
         match monitor.get_system_metrics() {
             Ok(metrics) => {
@@ -223,7 +353,7 @@ impl MCPServer {
     }
 
     /// Handles startMonitoring method
-    async fn handle_start_monitoring(&self, id: String) -> MCPResponse {
+    async fn handle_start_monitoring(&self, id: Option<String>) -> MCPResponse {
         let mut monitor = self.system_monitor.write().await;
         match monitor.start_monitoring() {
             Ok(started) => {
@@ -245,7 +375,7 @@ impl MCPServer {
     }
 
     /// Handles stopMonitoring method
-    async fn handle_stop_monitoring(&self, id: String) -> MCPResponse {
+    async fn handle_stop_monitoring(&self, id: Option<String>) -> MCPResponse {
         let mut monitor = self.system_monitor.write().await;
         match monitor.stop_monitoring() {
             Ok(stopped) => {
@@ -267,7 +397,7 @@ impl MCPServer {
     }
 
     /// Creates successful MCP response
-    fn create_success_response(&self, id: String, result: Value) -> MCPResponse {
+    fn create_success_response(&self, id: Option<String>, result: Value) -> MCPResponse {
         MCPResponse {
             jsonrpc: "2.0".to_string(),
             id,
@@ -277,7 +407,7 @@ impl MCPServer {
     }
 
     /// Creates error MCP response
-    fn create_error_response(&self, id: String, code: i32, message: &str) -> MCPResponse {
+    fn create_error_response(&self, id: Option<String>, code: i32, message: &str) -> MCPResponse {
         MCPResponse {
             jsonrpc: "2.0".to_string(),
             id,

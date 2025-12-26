@@ -128,13 +128,5 @@ impl SystemMonitor {
         }
     }
 
-    /// Checks if monitoring is currently active
-    pub fn is_monitoring_active(&self) -> bool {
-        self.monitoring_active
-    }
 
-    /// Gets the timestamp of the last data refresh
-    pub fn last_update(&self) -> DateTime<Utc> {
-        self.last_update
-    }
 }
